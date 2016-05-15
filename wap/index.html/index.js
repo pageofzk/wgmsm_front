@@ -1,0 +1,127 @@
+define('ui/page/detail/index', function(require, exports, module){
+	var $ = require('lib/zepto'),
+		misc = require('util/misc'),
+		Browser = require('util/browser'),
+		site  = require('ui/page/site'),
+		undefined;
+	var Page = module.exports = {};
+	Page.init = function(){
+		site.init({forceShow:false});
+		initPage();
+		initEvent();
+	}
+	function initPage(){
+		initSlider();
+	}
+	function initSlider(){
+		var $ul = $('.j_slider_cont ul'), $li = $ul.find('li'), width = $li.width(), num = $li.length;
+		$ul.width(width*num);
+		function sliderPic(){
+			$ul.animate({'marginLeft' : "-"+ width + "px"},800, "ease-out",function(){
+				$ul.find('li').eq(0).appendTo($ul);
+				$ul.css('margin-left', '0px');
+			});
+		}
+		setInterval(sliderPic, 3000);
+	}
+	var curPage = 0, total = $('.page').length, height = $('.page').height(), isAnimate = false;
+	function slidePage(direction, forcepage){
+		var top;
+		if (isAnimate) {
+			return;
+		};
+		isAnimate = true;
+		if (direction > 0) {
+			if (curPage >= total-1) {
+				isAnimate = false;
+				return;
+			};
+			top = -height;
+			curPage++;
+		}else{
+			if (curPage <= 0) {
+				isAnimate = false;
+				return;
+			};
+			top = height;
+			curPage--;
+		}
+		var $slider = $('.j_slider_page'), y = getTranslateY($slider[0]);
+		top = (y+top);
+		if (forcepage) {
+			top = -forcepage*height;
+			curPage = forcepage;
+		};
+		var $animateObj = $('.j_slide_'+curPage);
+		$animateObj.css('opacity', 0);
+		$slider.animate({"-webkit-transform":"translateY("+top+"px)"}, 700, "ease-out", function(){
+			$animateObj.animate({'opacity': 1}, 500, "ease-out", function(){
+				isAnimate = false;
+			});
+			// isAnimate = false;
+		});
+	}
+	function getTranslateY(d){
+		var transform = $(d).css("-webkit-transform");
+		return ((transform=='none') ? 0 : (parseInt(transform.match(/\-?[0-9]+/g)[0])));
+	}
+	var startX = startY = 0;
+	function touchStartFunc(evt){
+		evt = evt || window.event;
+		if (evt.target.tagName.toLowerCase() != 'a') {
+			evt.preventDefault && evt.preventDefault();
+			evt.stopPropagation && evt.stopPropagation();
+			evt.cancelBubble = true;
+			evt.returnValue = false;
+			var touch = evt.touches[0];
+			startX = Number(touch.pageX);
+			startY = Number(touch.pageY);
+		};
+	}
+	function touchEndFunc(evt){
+		evt = evt || window.event;
+		if (evt.target.tagName.toLowerCase() != 'a') {
+			evt.preventDefault && evt.preventDefault();
+			evt.stopPropagation && evt.stopPropagation();
+			evt.cancelBubble = true;
+			evt.returnValue = false;
+			var touch = evt.changedTouches[0], x, y;
+			x = Number(touch.pageX);
+			y = Number(touch.pageY);
+			if (Math.abs(y-startY) > Math.abs(x-startX)) {
+				if (y > startY) {
+					slidePage(-1);//向上
+				}else{
+					slidePage(1);//向下
+				}
+			};
+		};
+	}
+	function initEvent(){
+		document.addEventListener('touchstart', touchStartFunc, false);
+		document.addEventListener('touchend', touchEndFunc, false);
+		$('.j_download').on(misc.getEventType().tap, function(){
+			slidePage(1, 4);
+		});
+		$(document).keydown(function(evt){
+			evt = evt || window.event;
+			if (evt.keyCode == 40) {
+				slidePage(1);
+			}else if (evt.keyCode == 38) {
+				slidePage(-1);
+			};
+		});
+		$('.p5-download-btn').on(misc.getEventType().tap, function(){
+			if (Browser.isWeiXin()) {
+				misc.jumpToDownload();
+				return;
+			};
+			var type = $(this).attr('d-type');
+			if (type == 'ios') {
+				alert('开发中，敬请期待');
+			}else{
+				window.location.href = 'http://www.wgmsm.com/wgmsm.apk';
+			}
+		});
+	}
+});
